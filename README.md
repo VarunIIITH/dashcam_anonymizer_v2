@@ -7,7 +7,7 @@ v2 builds on [Dashcam Anonymizer](https://github.com/varungupta31/dashcam_anonym
 ## What's new in v2
 
 - **Two detectors:** the v1 YOLOv8 plate + face model, plus a dedicated YOLO face model.
-- **High-resolution inference** (1280 px by default) in GPU batches, so small and distant faces and plates are found.
+- **Full-resolution inference** (the video's own size by default) in GPU batches, so small and distant faces and plates are found.
 - **Temporal smoothing:** each frame is blurred with every box detected within ±2 frames, so a single missed detection does not leave a face or plate visible.
 - **Padded boxes and size-adaptive blur**; very large boxes are only blurred when the detector is confident, which removes most false positives.
 - **Streams video through ffmpeg:** no extracted frames or per-frame text files on disk, optional frame-range trimming, audio removed, H.265 (NVENC) output.
@@ -38,7 +38,7 @@ Useful options:
 |---|---|---|
 | `--detections out.npz` | off | save every detection (boxes, scores, classes) |
 | `--start_frame`, `--end_frame` | whole video | anonymize and keep only frames `[start, end)` |
-| `--imgsz` | 1280 | inference resolution |
+| `--imgsz` | video's longer side | inference resolution; lower it for speed, and lower `--batch` if the GPU runs out of memory |
 | `--conf`, `--face_conf` | 0.1, 0.15 | confidence thresholds of the plate+face model and the face model |
 | `--window` | 2 | blur each frame with boxes from ±`window` frames |
 | `--pad` | 0.15 | enlarge each box by this fraction on every side |

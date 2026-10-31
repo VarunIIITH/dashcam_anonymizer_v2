@@ -3,7 +3,7 @@
 
 Changes from v1 (https://github.com/varungupta31/dashcam_anonymizer):
   * Two detectors: the v1 YOLOv8 plate+face model, plus a dedicated YOLO face model.
-  * High-resolution inference (imgsz 1280 by default) in GPU batches.
+  * Inference at the video's own size by default, in GPU batches.
   * Temporal smoothing: a frame is blurred with every box detected within +-`window` frames,
     so single-frame misses do not leave a face or plate visible.
   * Boxes are enlarged by `pad` and the blur strength scales with box size; oversized boxes need high confidence.
@@ -116,7 +116,8 @@ def blur_boxes(img, boxes, pad, min_kernel):
 
 def anonymize(args):
     w, h, fps, rate, nb = probe(args.input)
-    det = Detector(args.plate_face_model, args.face_model, args.imgsz, args.conf, args.face_conf, args.device, args.batch,
+    imgsz = args.imgsz or max(w, h)  # by default the detector sees every pixel of the frame
+    det = Detector(args.plate_face_model, args.face_model, imgsz, args.conf, args.face_conf, args.device, args.batch,
                    args.big_plate_area, args.big_face_area, args.big_conf)
     os.makedirs(os.path.dirname(os.path.abspath(args.output)) or '.', exist_ok=True)
     enc = writer(args.output, w, h, args.out_rate or rate, args.codec, args.cq)
@@ -168,7 +169,7 @@ def main():
     p.add_argument('--detections', help='optional .npz path to save all detections')
     p.add_argument('--plate_face_model', required=True, help='v1 YOLOv8 model (classes: license, face)')
     p.add_argument('--face_model', default=None, help='dedicated YOLO face model (optional)')
-    p.add_argument('--imgsz', type=int, default=1280); p.add_argument('--conf', type=float, default=0.1)
+    p.add_argument('--imgsz', type=int, default=None, help="inference size; default is the video's longer side"); p.add_argument('--conf', type=float, default=0.1)
     p.add_argument('--face_conf', type=float, default=0.15)
     p.add_argument('--window', type=int, default=2, help='temporal window (+-frames) for box carry-over')
     p.add_argument('--pad', type=float, default=0.15, help='fractional box enlargement on each side')
