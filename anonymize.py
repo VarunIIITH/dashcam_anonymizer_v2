@@ -15,6 +15,9 @@ import numpy as np, cv2
 from ultralytics import YOLO
 
 PLATE, FACE = 0, 1  # output class ids
+# ffmpeg's default YUV<->BGR conversion darkens the video by about 2 levels and caps a lossless round trip at 45 dB.
+# These flags remove the shift (under 0.04 levels, 57 dB) and give the same result on any machine.
+SWS_FLAGS = 'bicubic+accurate_rnd+full_chroma_int+full_chroma_inp+bitexact'
 
 
 def probe(path):
@@ -34,7 +37,7 @@ def reader(path, w, h, fps, start=None, end=None):
     cmd += ['-i', path]
     if end is not None:
         cmd += ['-frames:v', str(end - (start or 0))]
-    cmd += ['-f', 'rawvideo', '-pix_fmt', 'bgr24', '-']
+    cmd += ['-sws_flags', SWS_FLAGS, '-f', 'rawvideo', '-pix_fmt', 'bgr24', '-']
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, bufsize=w * h * 3 * 4)
     n = w * h * 3
     while True:
@@ -50,7 +53,7 @@ def writer(path, w, h, rate, codec, cq):
            'hevc_nvenc': ['-c:v', 'hevc_nvenc', '-preset', 'p5', '-rc', 'vbr', '-cq', str(cq), '-b:v', '0', '-tag:v', 'hvc1'],
            'libx264': ['-c:v', 'libx264', '-preset', 'medium', '-crf', str(cq)]}[codec]
     cmd = ['ffmpeg', '-v', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', 'bgr24', '-s', f'{w}x{h}', '-r', rate,
-           '-i', '-'] + enc + ['-pix_fmt', 'yuv420p', '-an', '-movflags', '+faststart', path]
+           '-i', '-', '-sws_flags', SWS_FLAGS] + enc + ['-pix_fmt', 'yuv420p', '-an', '-movflags', '+faststart', path]
     return subprocess.Popen(cmd, stdin=subprocess.PIPE)
 
 
